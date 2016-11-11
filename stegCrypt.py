@@ -8,7 +8,7 @@ IMAGE_FILE = "tree.png"
 # Use the Image module to open up the image
 PICTURE = Image.open(IMAGE_FILE)
 # Get the width and height of the image
-WIDTH, HEIGHT = PICTURE.size()
+WIDTH, HEIGHT = PICTURE.size
 # All pixels from the image will be stored in PIXEL_MAP
 # They will be stored in a list consisting of 5 elements [XPos, YPos, R, G, B]
 # Where R, G and B represents the amount of that color that is on that pixel
@@ -63,10 +63,9 @@ def setNewImageFile(name):
     NEW_IMAGE_FILE = name
 
 if __name__ == '__main__':
-    # Example of conversion from decimal to binary
+    # Example of conversion from decimal to binary and then back to decimal
     someNumber = 123
     print "Here is " + str(someNumber) + " in binary: " + str(decimalToBinary(someNumber))
 
-    # Example of conversion from decimal to binary
-    someBinaryNumber = 010
-    print "Here is " + str(someBinaryNumber) + " in binary: " + str(binaryToDecimal(someBinaryNumber))
+    someBinaryNumber = decimalToBinary(someNumber)
+    print "Here is " + str(someBinaryNumber) + " in decimal: " + str(binaryToDecimal(someBinaryNumber))
