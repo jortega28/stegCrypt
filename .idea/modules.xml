@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../File-Transmission/.idea/File-Transmission.iml" filepath="$PROJECT_DIR$/../File-Transmission/.idea/File-Transmission.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/stegCrypt.iml" filepath="$PROJECT_DIR$/.idea/stegCrypt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../zcalc/.idea/zcalc.iml" filepath="$PROJECT_DIR$/../zcalc/.idea/zcalc.iml" />
     </modules>
   </component>
 </project>
