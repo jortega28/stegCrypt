@@ -32,13 +32,12 @@ def binaryToDecimal(binaryNumber):
     return int(binaryNumber, 2)
 
 def initPixelMap():
-    for y in HEIGHT:
-        for x in WIDTH:
+    for y in range (0, HEIGHT):
+        for x in range (0, WIDTH):
             r,g,b = PICTURE.getpixel( (x,y) )
             PIXEL_MAP.append([x, y, r, g, b])
 
 def changePixelColor(x, y, r, g, b):
-    #PICTURE.putpixel( (x,y), [r, g, b])
     i = 0
     while i < len(PIXEL_MAP):
         if PIXEL_MAP[i][0] == x and PIXEL_MAP[i][1] == y:
@@ -54,9 +53,11 @@ def createNewImage():
     setNewImageFile("new_" + IMAGE_FILE)
     copyfile(IMAGE_FILE, NEW_IMAGE_FILE)
     newPicture = Image.open(NEW_IMAGE_FILE)
+    p = newPicture.load()
     for pixels in PIXEL_MAP:
-        newPicture.putpixel((pixels[0], pixels[1]), [pixels[2], pixels[3], pixels[4]])
-
+        r, g, b = p[pixels[0], pixels[1]]
+        p[pixels[0], pixels[1]] = (pixels[2], pixels[3], pixels[4])
+    newPicture.save(NEW_IMAGE_FILE)
 
 def setNewImageFile(name):
     global NEW_IMAGE_FILE
@@ -69,3 +70,22 @@ if __name__ == '__main__':
 
     someBinaryNumber = decimalToBinary(someNumber)
     print "Here is " + str(someBinaryNumber) + " in decimal: " + str(binaryToDecimal(someBinaryNumber))
+
+    # Print out the dimensions of the image
+    print "The dimensions of the image is " + str(WIDTH) + " x " + str(HEIGHT)
+
+    # Initialize the pixel map and have it read every pixel in the image
+    initPixelMap()
+
+    # Print out the pixel map which contains the location of every pixel
+    # And the R G B values associated with that pixel
+    print PIXEL_MAP
+
+    # Add 100 to the blue value in the pixel map for every pixel
+    for i in range(0, len(PIXEL_MAP)):
+        PIXEL_MAP[i][2] = PIXEL_MAP[i][2]
+        PIXEL_MAP[i][3] = PIXEL_MAP[i][3]
+        PIXEL_MAP[i][4] = PIXEL_MAP[i][4]+100
+
+    # Now create an image using the new pixel map
+    createNewImage()
