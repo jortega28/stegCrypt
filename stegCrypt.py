@@ -1,12 +1,14 @@
 import sender_module
-import Image
+import Image, ImageOps
 import sys
 from shutil import copyfile
 
-# Name of the file we are going to be working with
-IMAGE_FILE = "tree.png"
-# Use the Image module to open up the image
+# Name of the files we are going to be working with
+IMAGE_FILE = "public.png"
+SECRET_IMAGE_FILE = "to_hide_2.png"
+# Use the Image module to open up the images (and make the secret image the same size as the original)
 PICTURE = Image.open(IMAGE_FILE)
+SECRET_PICTURE = ImageOps.autocontrast(Image.open(SECRET_IMAGE_FILE).resize(PICTURE.size))
 # Get the width and height of the image
 WIDTH, HEIGHT = PICTURE.size
 # All pixels from the image will be stored in PIXEL_MAP
@@ -16,14 +18,27 @@ PIXEL_MAP = []
 # New image produced
 NEW_IMAGE_FILE = ""
 
-def bitShift():
-    print "This method will perform a bit shift..."
+def hideImage():
+    s = 4
+    for x in range (0, WIDTH):
+        for y in range (0, HEIGHT):
+            p = PICTURE.getpixel( (x,y) )
+            q = SECRET_PICTURE.getpixel( (x,y) )
+            r = p[0] - (p[0] % s) + (s * q[0] / 255)
+            g = p[1] - (p[1] % s) + (s * q[1] / 255)
+            b = p[2] - (p[2] % s) + (s * q[2] / 255)
+            PIXEL_MAP.append([x, y, r, g, b])
 
-def decryptImage():
-    print "A decryption of the image will be done here..."
-
-def decryptImage():
-    print "An image will be decrypted here..."
+def extractSecretImage(imageToExtract):
+    s = 4
+    imageData = Image.open(imageToExtract)
+    for x in range (0, imageData.size[0]):
+        for y in range (0, imageData.size[1]):
+            p = imageData.getpixel( (x,y) )
+            r = (p[0] % s) * 255 / s
+            g = (p[1] % s) * 255 / s
+            b = (p[2] % s) * 255 / s
+            PIXEL_MAP.append([x, y, r, g, b])
 
 def decimalToBinary(decimalNumber):
     return bin(decimalNumber)[2:]
@@ -48,9 +63,9 @@ def changePixelColor(x, y, r, g, b):
             PIXEL_MAP[i][4] = b
         i += 1
 
-def createNewImage():
+def createNewImage(prefix):
     # This will take all items in the PIXEL_MAP and print it into its own image
-    setNewImageFile("new_" + IMAGE_FILE)
+    setNewImageFile(prefix + "_" + IMAGE_FILE)
     copyfile(IMAGE_FILE, NEW_IMAGE_FILE)
     newPicture = Image.open(NEW_IMAGE_FILE)
     p = newPicture.load()
@@ -59,11 +74,7 @@ def createNewImage():
         p[pixels[0], pixels[1]] = (pixels[2], pixels[3], pixels[4])
     newPicture.save(NEW_IMAGE_FILE)
 
-def setNewImageFile(name):
-    global NEW_IMAGE_FILE
-    NEW_IMAGE_FILE = name
-
-if __name__ == '__main__':
+def exampleUsage():
     # Example of conversion from decimal to binary and then back to decimal
     someNumber = 123
     print "Here is " + str(someNumber) + " in binary: " + str(decimalToBinary(someNumber))
@@ -88,4 +99,30 @@ if __name__ == '__main__':
         PIXEL_MAP[i][4] = PIXEL_MAP[i][4]+100
 
     # Now create an image using the new pixel map
-    createNewImage()
+    createNewImage("new")
+
+def setNewImageFile(name):
+    global NEW_IMAGE_FILE
+    NEW_IMAGE_FILE = name
+
+def clearPixelMap():
+    global PIXEL_MAP
+    PIXEL_MAP = []
+
+if __name__ == '__main__':
+    # Here I will ask for what the files are called
+
+    # Start hiding the image
+    hideImage()
+
+    # Save the new pixel map into a file
+    createNewImage("hidden")
+
+    # Clear the pixel map
+    clearPixelMap()
+
+    # Extract hidden image
+    extractSecretImage("hidden_public.png")
+
+    # Save the hidden image
+    createNewImage("extracted")
