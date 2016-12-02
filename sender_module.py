@@ -12,7 +12,7 @@ IP6MODE = False
 # Transfer without the use of a sliding window algorithm
 SLIDE_WIN_MODE = False
 # Timeout in sending file after this much time
-TIMEOUT = .1
+TIMEOUT = .2
 # Receiver IPv4 address
 serverip4 = "127.0.0.1"
 # Receiver IPv6 address
@@ -26,41 +26,90 @@ OPCODE_ACK = 4
 OPCODE_ERROR = 5
 # Size of the packets to be sent
 BUFFER_SIZE = 65536
+# Current block number
+BLOCK_NUMBER = 0
 # Records what blocks of data have been sent
 BLOCKS_SENT = []
 # The mode in which to send the data
 MODE = "octet"
 
+def initNetSetting(file, ip4, port):
+    global FILE_NAME
+    global serverip4
+    global PORT
+    FILE_NAME = file
+    serverip4 = ip4
+    PORT = port
+    global BLOCK_NUMBER
+    global BLOCKS_SENT
+    BLOCK_NUMBER = 0
+    BLOCKS_SENT = []
+
 def sendFile():
     if SLIDE_WIN_MODE is True:
         return False
-    socket = createSocket()
+
+    socket = ""
+    if IP6MODE is False:
+        socket = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        socket.settimeout(10)
+    else:
+        socket = sock.socket(sock.AF_INET6, sock.SOCK_DGRAM)
+        socket.settimeout(10)
+
+    print "Connection established..."
 
     FILE = openFile(socket)
 
-    data = lastdata = FILE.read(512)
+    #alldata = ""
+    #threshold = 10
+    #currentT = 0
+    #lastWasBlank = False
+    #while currentT < threshold:
+    #    currentLine = FILE.readline()
+    #    print currentLine
+    #    if currentLine == "":
+    #        currentT += 1
+    #        lastWasBlank = True
+    #    if currentLine != "" and lastWasBlank:
+    #        currentT = 0
+    #        lastWasBlank = False
+    #    alldata = alldata + currentLine
 
+    #data = lastdata = FILE.read(512)
+    alldata = FILE.read()
+    FILE.close()
+
+    start = 0
+    end = 512
+
+    data = lastdata = alldata[start:end]
+    #print data
+    #print len(data)
     #WRQ Packet
 
     sendWRQ(socket)
 
     #Data Packet
     addToBlock(1)
-    print("Sending block " + str(BLOCK_NUMBER))
+    #print("Sending block " + str(BLOCK_NUMBER))
     sendData(socket, data)
     waitForACK(socket, data)
 
-    while len(data) == 512:
-        data = lastdata = FILE.read(512)
-        if data == "":
-            break
+    size = len(alldata)
+
+    while start < size:
+        start += 512
+        end += 512
+        data = lastdata = alldata[start:end]
 
         addToBlock(1)
-        print("Sending block " + str(BLOCK_NUMBER))
+        #print("Sending block " + str(BLOCK_NUMBER))
         sendData(socket, data)
         waitForACK(socket, data)
 
-    FILE.close()
+    socket.close()
+
     return True
 
 def openFile(socket):
@@ -71,13 +120,13 @@ def openFile(socket):
     return FILE
 
 def sendError(socket, errmsg, errcode):
-    print("Sending ERROR packet...")
+    print("ERROR occurred sendind receiver ERROR packet...")
     if IP6MODE is False:
         socket.sendto(ERRPacket(errmsg, errcode), (serverip4, PORT))
     else:
         socket.sendto(ERRPacket(errmsg, errcode), getSockAddr())
     socket.close()
-    sys.exit("Error Code " + errcode + ":\n" + errmsg)
+    sys.exit("Error Code " + errcode + ":\n" + str(errmsg))
 
 def ERRPacket(errmsg, errcode):
     formattedEM = str(errmsg)
@@ -97,7 +146,7 @@ def waitForACK(socket, data):
     try:
         packet, client = socket.recvfrom(BUFFER_SIZE)
     except Exception:
-        print("Timeout... no ACK received... resending data packet...")
+        print("The connection timed out. File not sent.")
         sendData(socket, data)
         socket.settimeout(TIMEOUT*2)
         packet, client = socket.recvfrom(BUFFER_SIZE)
@@ -105,10 +154,10 @@ def waitForACK(socket, data):
 
     opcode = int(packet[0:1])
     if opcode == 4:
-        print("Received ACK...")
+        #print("Received ACK...")
         serverblock = int(packet[1:11])
         if BLOCK_NUMBER != serverblock:
-            print("Incorrect ACK... waiting...")
+            #print("Incorrect ACK... waiting...")
             sendData(socket, data)
             socket.settimeout(TIMEOUT*2)
             packet, client = socket.recvfrom(BUFFER_SIZE)
@@ -118,7 +167,7 @@ def waitForACK(socket, data):
         errcode = packet[1:2]
         errmsg = packet[2:129]
         socket.close()
-        sys.exit("Error Code " + errcode + ":\n" + errmsg)
+        sys.exit("Error Code " + errcode + ":\n" + str(errmsg))
 
 def waitForACKs(socket, sent):
     packets = []
@@ -133,12 +182,12 @@ def waitForACKs(socket, sent):
             i += 1
             setWINPOS(BLOCK_NUMBER)
     except Exception:
-        print("Timeout... not all ACKs received...")
+        print("Timeout... all the data was not successfully delivered...")
         j = 0
         while j < len(packets):
             opcode = int(packets[j][0:1])
             if opcode == 4:
-                print("Received ACK...")
+                #print("Received ACK...")
                 serverblock = int(packets[j][1:11])
                 received.append(serverblock)
             elif opcode == 5:
@@ -146,10 +195,10 @@ def waitForACKs(socket, sent):
                 errcode = packets[j][1:2]
                 errmsg = packets[j][2:129]
                 socket.close()
-                sys.exit("Error Code " + errcode + ":\n" + errmsg)
+                sys.exit("Error Code " + errcode + ":\n" + str(errmsg))
             j += 1
         #Now decide what packets need to be resent
-        print resend
+        #print resend
         k = 0
         while k < len(received):
             l = 0
@@ -162,7 +211,7 @@ def waitForACKs(socket, sent):
             k += 1
         #Now we know what blocks need to be resent
         #We will choose the earliest block number
-        print resend
+        # print resend
         earliest = resend[0]
         setBlockNumber(earliest-1)
         setWINPOS(earliest-1)
